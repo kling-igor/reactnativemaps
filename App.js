@@ -10,25 +10,31 @@ import {
 } from 'react-native';
 import MapView from 'react-native-maps';
 
-export default class App extends Component<{}> {
-  render() {
-    return (
-      <MapView
-        provider="google"
-        style={StyleSheet.absoluteFillObject}
-      >
-        <MapView.Marker
-          title="Greenwich"
-          coordinate={{
-            latitude: 51.48,
-            longitude: 0
-          }}
-          calloutOffset={{
-            x: -50,
-            y: -50
-          }}
-        />
-      </MapView>
-    );
-  }
-}
+const App = () => (
+  <MapView
+    provider={'google'}
+    style={StyleSheet.absoluteFillObject}
+    mapType={'satellite'}
+    showsUserLocation={true}
+    initialRegion={{
+      latitude: 53.31,
+      longitude: 49.25,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421
+    }}
+  >
+    <MapView.Marker
+      title="Greenwich"
+      coordinate={{
+        latitude: 53.31,
+        longitude: 49.25
+      }}
+      calloutOffset={{
+        x: -50,
+        y: -50
+      }}
+    />
+  </MapView>
+)
+
+export default App  

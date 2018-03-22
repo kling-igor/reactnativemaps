@@ -565,6 +565,12 @@
 			attributes = {
 				LastUpgradeCheck = 0610;
 				ORGANIZATIONNAME = Facebook;
+				TargetAttributes = {
+					13B07F861A680F5B00A75B9A = {
+						DevelopmentTeam = MGB98L2Y6W;
+						ProvisioningStyle = Manual;
+					};
+				};
 			};
 			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "ReactNativeMaps" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -1006,8 +1012,10 @@
 			baseConfigurationReference = 1C75B406167E8C357609EC9F /* Pods-ReactNativeMaps.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = NO;
+				DEVELOPMENT_TEAM = MGB98L2Y6W;
 				INFOPLIST_FILE = ReactNativeMaps/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				OTHER_LDFLAGS = (
@@ -1015,8 +1023,10 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.reactjs.native.example.ReactNativeMaps;
+				PRODUCT_BUNDLE_IDENTIFIER = com.altarix.marm;
 				PRODUCT_NAME = ReactNativeMaps;
+				PROVISIONING_PROFILE = "1fca0f88-64a8-4444-a2b7-b738bbe3418f";
+				PROVISIONING_PROFILE_SPECIFIER = DevelopmentMarm;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -1026,7 +1036,9 @@
 			baseConfigurationReference = A07E1566024C6DB9685731A5 /* Pods-ReactNativeMaps.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = MGB98L2Y6W;
 				INFOPLIST_FILE = ReactNativeMaps/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				OTHER_LDFLAGS = (
@@ -1034,8 +1046,10 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.reactjs.native.example.ReactNativeMaps;
+				PRODUCT_BUNDLE_IDENTIFIER = com.altarix.marm;
 				PRODUCT_NAME = ReactNativeMaps;
+				PROVISIONING_PROFILE = "1fca0f88-64a8-4444-a2b7-b738bbe3418f";
+				PROVISIONING_PROFILE_SPECIFIER = DevelopmentMarm;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
