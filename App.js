@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import {View, Text, StyleSheet, Dimensions} from 'react-native';
 import MapView, { Callout, Marker, ProviderPropType, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geocoder from './Geocoder'
+import {v4} from 'uuid'
+
 
 let { width, height } = Dimensions.get('window')
 const ASPECT_RATIO = width / height
@@ -24,12 +26,25 @@ export default class App extends React.Component {
 
     this.state = {
       region:{
-        latitude: 53.556,
-        longitude: 49.295,
+        latitude: 53.54149059188792,
+        longitude: 49.36498571187258,
         latitudeDelta: LATITUDE_DELTA,
         longitudeDelta: LONGITUDE_DELTA
       },
-      poi: null
+      poi: null,
+      address: null,
+      markers:[
+        {
+          latitude: 53.541,
+          longitude: 49.365,
+          address: 'NO ADDRESS'
+        },
+        // {
+        //   latitude: 53.54149059188792,
+        //   longitude: 49.36498571187258,
+        //   address: ''
+        // }
+      ]
     }
 
     this.onRegionChange = this.onRegionChange.bind(this)
@@ -39,19 +54,49 @@ export default class App extends React.Component {
 
     console.log(`lat: ${latitude} lng: ${longitude}`)
 
-    Geocoder.getFromLatLng(latitude, longitude).then(
-      json => {
-        const address_component = json.results[0].address_components[0];
-        console.log('ADDRESS:', json)
-      },
-      error => {
-        console.error(error)
-      }
-    );
+
+    // TODO если к окончанию обновления изменится массив маркеров - то проблема!!!!
+
+    const updateMarkerAddress = (index, markers) => {
+
+      if (!markers[index]) return
+
+      const {latitude, longitude} = markers[index]
+
+      console.log(`REQUESTING ADDRES FOR lat: ${latitude},  lang:${longitude}`)
 
 
+      Geocoder.getFromLatLng(latitude, longitude).then(
+        json => {
+          // console.log('JSON:', json)
+          const address = json.results[0].formatted_address;
+          console.log('ADDRESS:', address)
 
+          const updatedMarkers = [...markers.slice(0, index), 
+            {
+              latitude,
+              longitude,
+              address
+            },
+            ...markers.slice(index + 1)]
 
+          this.setState({
+            markers: updatedMarkers
+          }, () =>{
+
+            console.log('UPDATED MARKERS:', this.state.markers)
+
+            if (index < this.state.markers.length - 1) {
+              setTimeout(updateMarkerAddress, 0, index + 1, [...this.state.markers])
+            }
+          })
+        },
+        error => {
+          console.error(error)
+        })
+    }
+
+    updateMarkerAddress(0, [...this.state.markers])
 
   }
 
@@ -97,6 +142,9 @@ export default class App extends React.Component {
 
   // standard, satellite, hybrid, terrain
 
+
+  // title={`${this.state.region.longitude.toFixed(3) } / ${ this.state.region.latitude.toFixed(3)}`}
+  // onDragEnd={e => console.log(`placed to: ${e.nativeEvent.coordinate}`)}
   render() {
     return (
       <View style={styles.container}>
@@ -122,21 +170,22 @@ export default class App extends React.Component {
             </Marker>  
           )}
 
-
-          <MapView.Marker
-            dragable
-            title={`${this.state.region.longitude.toFixed(3) } / ${ this.state.region.latitude.toFixed(3)}`}
-            coordinate={{
-              latitude: this.state.region.latitude,
-              longitude: this.state.region.longitude
-            }}
-            calloutOffset={{
-              x: -50,
-              y: -50
-            }}
-            onDragEnd={e => console.log(`placed to: ${e.nativeEvent.coordinate}`)}
-          >
+          {this.state.markers.map(marker => (
+            <MapView.Marker
+              dragable
+              title={`${marker.address}`}
+              coordinate={{
+                latitude: marker.latitude,
+                longitude: marker.longitude
+              }}
+              calloutOffset={{
+                x: -50,
+                y: -50
+              }}
+              key={v4()}
+            >
           </MapView.Marker>
+          ))}
         </MapView>
       </View>
     )

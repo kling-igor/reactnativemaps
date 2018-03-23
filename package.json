@@ -9,7 +9,8 @@
   "dependencies": {
     "react": "16.0.0",
     "react-native": "0.54",
-    "react-native-maps": "https://github.com/react-community/react-native-maps.git"
+    "react-native-maps": "https://github.com/react-community/react-native-maps.git",
+    "uuid": "^3.2.1"
   },
   "devDependencies": {
     "babel-jest": "21.2.0",
