@@ -96,7 +96,7 @@ export default class App extends React.Component {
         })
     }
 
-    updateMarkerAddress(0, [...this.state.markers])
+    // updateMarkerAddress(0, [...this.state.markers])
 
   }
 
@@ -171,20 +171,21 @@ export default class App extends React.Component {
           )}
 
           {this.state.markers.map(marker => (
-            <MapView.Marker
+            <Marker
               dragable
-              title={`${marker.address}`}
+              title={`SOME TITLE`}
               coordinate={{
                 latitude: marker.latitude,
                 longitude: marker.longitude
               }}
-              calloutOffset={{
-                x: -50,
-                y: -50
-              }}
+              onSelect={({nativeEvent}) => console.log('onSelect', nativeEvent.coordinate)}
+              onDrag={({nativeEvent}) => console.log('onDrag', nativeEvent.coordinate)}
+              onDragStart={({nativeEvent}) => console.log('onDragStart', nativeEvent.coordinate)}
+              onDragEnd={({nativeEvent}) => console.log('onDragEnd', nativeEvent.coordinate)}
+              onPress={({nativeEvent}) => console.log('onPress', nativeEvent.coordinate)}
               key={v4()}
             >
-          </MapView.Marker>
+          </Marker>
           ))}
         </MapView>
       </View>
