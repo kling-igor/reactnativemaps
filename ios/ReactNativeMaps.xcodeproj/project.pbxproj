@@ -1027,6 +1027,7 @@
 				PRODUCT_NAME = ReactNativeMaps;
 				PROVISIONING_PROFILE = "1fca0f88-64a8-4444-a2b7-b738bbe3418f";
 				PROVISIONING_PROFILE_SPECIFIER = DevelopmentMarm;
+				TARGETED_DEVICE_FAMILY = 2;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -1050,6 +1051,7 @@
 				PRODUCT_NAME = ReactNativeMaps;
 				PROVISIONING_PROFILE = "1fca0f88-64a8-4444-a2b7-b738bbe3418f";
 				PROVISIONING_PROFILE_SPECIFIER = DevelopmentMarm;
+				TARGETED_DEVICE_FAMILY = 2;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
