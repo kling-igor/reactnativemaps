@@ -27,17 +27,20 @@ const latitudeToPixelSpaceY = latitude => {
 
 
 const pixelSpaceXToLongitude = pixelX => {
-  return ((Math.round(pixelX) - MERCATOR_OFFSET) / MERCATOR_RADIUS) * 180.0 / Math.PI;
+  // return ((Math.round(pixelX) - MERCATOR_OFFSET) / MERCATOR_RADIUS) * 180.0 / Math.PI;
+  return ((pixelX - MERCATOR_OFFSET) / MERCATOR_RADIUS) * 180.0 / Math.PI;
 }
 
+
 const pixelSpaceYToLatitude = pixelY => {
-  return (Math.PI / 2.0 - 2.0 * Math.atan(Math.exp((Math.round(pixelY) - MERCATOR_OFFSET) / MERCATOR_RADIUS))) * 180.0 / Math.PI;
+  // return (Math.PI / 2.0 - 2.0 * Math.atan(Math.exp((Math.round(pixelY) - MERCATOR_OFFSET) / MERCATOR_RADIUS))) * 180.0 / Math.PI;
+  return (Math.PI / 2.0 - 2.0 * Math.atan(Math.exp((pixelY - MERCATOR_OFFSET) / MERCATOR_RADIUS))) * 180.0 / Math.PI;
 }
 
 const calcRegion = (latitude, longitude, zoomLevel, mapWidth, mapHeight) => {
   // convert center coordiate to pixel space
-  const centerPixelX = longitudeToPixelSpaceX(longitude)
-  const centerPixelY = latitudeToPixelSpaceY(latitude)
+  const centerPixelX = MERCATOR_OFFSET + MERCATOR_RADIUS * longitude * Math.PI / 180.0
+  const centerPixelY = MERCATOR_OFFSET - MERCATOR_RADIUS * Math.log((1 + Math.sin(latitude * Math.PI / 180.0)) / (1 - Math.sin(latitude * Math.PI / 180.0))) / 2.0
 
   // determine the scale value from the zoom level
   const zoomExponent = 20 - zoomLevel
@@ -60,7 +63,7 @@ const calcRegion = (latitude, longitude, zoomLevel, mapWidth, mapHeight) => {
   const maxLat = pixelSpaceYToLatitude(topLeftPixelY + scaledMapHeight)
   const latitudeDelta = -1 * (maxLat - minLat);
 
-  return { latitude, longitude, latitudeDelta, longitudeDelta }
+  return { latitude: Number.parseFloat(latitude.toFixed(6)), longitude: Number.parseFloat(longitude.toFixed(6)), latitudeDelta, longitudeDelta }
 }
 
 
@@ -230,7 +233,7 @@ class MapScreen extends React.Component {
 
   onRegionChangeComplete = region => {
     const { latitude, longitude, longitudeDelta } = region
-    const zoom = Math.round(Math.log(360 / longitudeDelta) / Math.LN2)
+    const zoom = Number.parseFloat((Math.log(360 / longitudeDelta) / Math.LN2).toFixed(2))
     // console.log('ZOOM:', zoom)
 
     console.log(`onRegionChangeComplete: ${JSON.stringify(region)} zoom:${zoom}`)
