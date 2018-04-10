@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { View, StyleSheet, Dimensions } from 'react-native'
+import { View, StyleSheet, Dimensions, Button, Text } from 'react-native'
 import MapView, { Callout, Marker, ProviderPropType, PROVIDER_GOOGLE } from 'react-native-maps'
 import PropTypes from 'prop-types'
 import { observable, computed, action, autorun, transaction, when, spy } from 'mobx'
@@ -13,11 +13,66 @@ spy((event) => {
 })
 
 
+const MERCATOR_OFFSET = 268435456
+const MERCATOR_RADIUS = 85445659.44705395
+
+const longitudeToPixelSpaceX = longitude => {
+  return Math.round(MERCATOR_OFFSET + MERCATOR_RADIUS * longitude * Math.PI / 180.0)
+}
+
+
+const latitudeToPixelSpaceY = latitude => {
+  return Math.round(MERCATOR_OFFSET - MERCATOR_RADIUS * Math.log((1 + Math.sin(latitude * Math.PI / 180.0)) / (1 - Math.sin(latitude * Math.PI / 180.0))) / 2.0);
+}
+
+
+const pixelSpaceXToLongitude = pixelX => {
+  return ((Math.round(pixelX) - MERCATOR_OFFSET) / MERCATOR_RADIUS) * 180.0 / Math.PI;
+}
+
+const pixelSpaceYToLatitude = pixelY => {
+  return (Math.PI / 2.0 - 2.0 * Math.atan(Math.exp((Math.round(pixelY) - MERCATOR_OFFSET) / MERCATOR_RADIUS))) * 180.0 / Math.PI;
+}
+
+const calcRegion = (latitude, longitude, zoomLevel, mapWidth, mapHeight) => {
+  // convert center coordiate to pixel space
+  const centerPixelX = longitudeToPixelSpaceX(longitude)
+  const centerPixelY = latitudeToPixelSpaceY(latitude)
+
+  // determine the scale value from the zoom level
+  const zoomExponent = 20 - zoomLevel
+  const zoomScale = Math.pow(2, zoomExponent)
+
+  const scaledMapWidth = mapWidth * zoomScale
+  const scaledMapHeight = mapHeight * zoomScale
+
+  // figure out the position of the top-left pixel
+  const topLeftPixelX = centerPixelX - (scaledMapWidth / 2)
+  const topLeftPixelY = centerPixelY - (scaledMapHeight / 2)
+
+  // find delta between left and right longitudes
+  const minLng = pixelSpaceXToLongitude(topLeftPixelX)
+  const maxLng = pixelSpaceXToLongitude(topLeftPixelX + scaledMapWidth)
+  const longitudeDelta = maxLng - minLng
+
+  // find delta between top and bottom latitudes
+  const minLat = pixelSpaceYToLatitude(topLeftPixelY)
+  const maxLat = pixelSpaceYToLatitude(topLeftPixelY + scaledMapHeight)
+  const latitudeDelta = -1 * (maxLat - minLat);
+
+  return { latitude, longitude, latitudeDelta, longitudeDelta }
+}
+
+
 class MapStore {
   width
   height
   @observable viewRatio
   @observable.ref center = { lat: 55.75149154293644, lng: 37.611341682501916 }
+
+  blockLoop
+  usingDeltas = false
+  // @observable.ref deltas = {}
   @observable zoom = 15
 
   @observable.ref markers = []
@@ -34,25 +89,15 @@ class MapStore {
   //   }
 
   @computed get region() {
-    console.log('---REGION---')
+    const ratio = this.viewRatio // TODO НЕ УДАЛЯТЬ!!!! от него зависит правильность работы всего модуля!!! 
 
-    const ratio = this.viewRatio
+    const region = calcRegion(this.center.lat, this.center.lng, this.zoom, this.width, this.height)
 
-    console.log('RATIO:', ratio)
-    console.log('WIDTH:', this.width)
-    console.log('ZOOM:', this.zoom);
+    console.log('REGION:', region)
 
-    if (ratio) {
-      // console.log('READY!!!')
-      const latitudeDelta = this.width * 360 / (Math.exp(this.zoom * Math.LN2) * 256)
-      const longitudeDelta = latitudeDelta * ratio
+    return region
 
-      return { latitude: this.center.lat, longitude: this.center.lng, latitudeDelta, longitudeDelta }
-    }
-
-    console.log('NOT READY')
-
-    return { latitude: 55.75149154293644, longitude: 37.611341682501916, latitudeDelta: 0.006, longitudeDelta: 0.012 }
+    // return { latitude: 55.75149154293644, longitude: 37.611341682501916, latitudeDelta: 0.006182923187338929, longitudeDelta: 0.010986328125 }
   }
 
   @action
@@ -63,7 +108,7 @@ class MapStore {
 
     this.viewRatio = width / height
     console.log('on layout:', this.width, this.height);
-    console.log('RATIO:', this.viewRatio)
+    // console.log('RATIO:', this.viewRatio)
   }
 
   @action
@@ -76,12 +121,26 @@ class MapStore {
     this.zoom = zoom
   }
 
+  // for web google-maps
   @action
   setCenterAndZoom(lat, lng, zoom) {
     transaction(() => {
-      this.setCenter(lat, lng)
-      this.setZoom(zoom)
-      console.log('setCenterAndZoom ', lat, lng, zoom)
+      if (lat !== this.center.lat || lng !== this.center.lng) {
+        this.center = { lat, lng }
+      }
+      if (zoom !== this.zoom) {
+        this.zoom = zoom
+      }
+    })
+  }
+
+  // for native google-maps
+  @action
+  setRegion(lat, lng, latitudeDelta, longitudeDelta) {
+    transaction(() => {
+      this.usingDeltas = true
+      this.center = { lat, lng }
+      this.deltas = { latitudeDelta, longitudeDelta }
     })
   }
 
@@ -123,13 +182,21 @@ const Markers = props => {
 //   markers: PropTypes.observableArray.isRequired
 // }
 
+// let mapRef
 
 const MapRenderer = observer(({ style, mapStore, onRegionChangeComplete, onPress }) => (
   <MapView
+    // ref={ref => { mapRef = ref }}
     style={styles.map}
     provider={PROVIDER_GOOGLE}
     mapType='standard'
-    startRegion={mapStore.region}
+    minZoomLevel={0}
+    maxZoomLevel={20}
+    rotateEnabled={false}
+    pitchEnabled={false}
+    showsPointsOfInterest={false}
+    initialRegion={mapStore.region}
+    region={mapStore.region}
     onRegionChangeComplete={onRegionChangeComplete}
     onPress={onPress}
   >
@@ -153,6 +220,8 @@ class MapScreen extends React.Component {
     this.state = {
       region: { latitude: 0, longitude: 0, latitudeDelta: 0.006, longitudeDelta: 0.012 }
     }
+
+    this.onLayout = this.props.mapStore.onLayout.bind(this.props.mapStore)
   }
 
   componentWillReact() {
@@ -160,20 +229,11 @@ class MapScreen extends React.Component {
   }
 
   onRegionChangeComplete = region => {
-    console.log('onRegionChangeComplete:', region)
-    // this.setState({
-    //   region
-    // }, () => {
-    //   console.log('STATE:', this.state.region)
-    //   const { latitude, longitude, longitudeDelta } = region
-    //   const zoom = Math.log(360 / longitudeDelta) / Math.LN2
-    //   // store.setCenter(latitude, longitude)
-    //   // store.setZoom(zoom)
-    //   this.props.mapStore.setCenterAndZoom(latitude, longitude, zoom)
-    // })
-
     const { latitude, longitude, longitudeDelta } = region
-    const zoom = Math.log(360 / longitudeDelta) / Math.LN2
+    const zoom = Math.round(Math.log(360 / longitudeDelta) / Math.LN2)
+    // console.log('ZOOM:', zoom)
+
+    console.log(`onRegionChangeComplete: ${JSON.stringify(region)} zoom:${zoom}`)
     this.props.mapStore.setCenterAndZoom(latitude, longitude, zoom)
   }
 
@@ -210,24 +270,48 @@ class MapScreen extends React.Component {
   //     </View >)
   // }
 
+  button1 = () => {
+    this.props.mapStore.setCenterAndZoom(55.7503, 37.6728, 10)
+  }
+
+  button2 = () => {
+    this.props.mapStore.setCenterAndZoom(53.5107, 49.4714, 10)
+  }
+
   render() {
     const { mapStore, style } = this.props
     return (
-      <View style={[style, styles.container]} onLayout={mapStore.onLayout.bind(mapStore)}>
-        {mapStore.viewRatio ? <MapRenderer style={style} mapStore={this.props.mapStore} onRegionChangeComplete={this.onRegionChangeComplete} onPress={this.onPress} /> : null}
+      <View style={[style, styles.container]}>
+        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Button
+            style={{ backgroundColor: 'yellow' }}
+            onPress={this.button1}
+            title="Туда"
+            color="#841584"
+          />
+          <Button
+            onPress={this.button2}
+            title="Сюда"
+            color="#123456"
+          />
+        </View>
+        <Text>{this.props.mapStore.zoom} : {this.props.mapStore.center.lat}, {this.props.mapStore.center.lng} </Text>
+        <View style={styles.map} onLayout={this.onLayout}>
+          {mapStore.viewRatio ? <MapRenderer mapStore={this.props.mapStore} onRegionChangeComplete={this.onRegionChangeComplete} onPress={this.onPress} /> : null}
+        </View>
       </View >)
   }
 }
 
-
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    width: 512,
+    height: 512
   }
 })
 
